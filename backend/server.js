@@ -15,12 +15,14 @@ const { connectDB } = require("./config/db");
 const errorHandler = require("./middleware/errorHandler");
 
 // ── Route imports ──────────────────────────────────────────────────────────
+
 const authRoutes     = require("./routes/auth");
 const resumeRoutes   = require("./routes/resume");
 const analysisRoutes = require("./routes/analysis");
 const userRoutes     = require("./routes/user");
 const jobMatchRoutes = require("./routes/jobMatch");  // ← NEW
 const resumeBuilderRoutes = require("./routes/resumeBuilder");
+
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -34,6 +36,8 @@ app.use(express.urlencoded({ extended: true }));
 
 // Serve uploaded files as static assets
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+
 
 // ── Global rate limiter (100 req / 15 min per IP) ──────────────────────────
 const globalLimiter = rateLimit({
@@ -57,6 +61,7 @@ app.use("/api/analyses",    analysisRoutes);
 app.use("/api/users",       userRoutes);
 app.use("/api/job-matches", jobMatchRoutes);  // ← NEW
 app.use("/api/resume-builder", resumeBuilderRoutes);
+
 
 // Health check
 app.get("/api/health", (req, res) => {
