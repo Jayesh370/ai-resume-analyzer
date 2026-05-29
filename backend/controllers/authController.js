@@ -34,6 +34,8 @@ const register = async (req, res, next) => {
     const userId = await User.create({ name, email, password });
     const user = await User.findById(userId);
     const token = signToken(user);
+    console.log("hii from register route");
+    
 
     res.status(201).json({
       success: true,
@@ -42,6 +44,8 @@ const register = async (req, res, next) => {
       user: { id: user.id, name: user.name, email: user.email },
     });
   } catch (err) {
+    console.log(err);
+    
     next(err);
   }
 };
