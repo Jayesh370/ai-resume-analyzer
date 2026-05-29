@@ -17,6 +17,8 @@ const signToken = (user) =>
 // ── POST /api/auth/register ────────────────────────────────────────────────
 const register = async (req, res, next) => {
   try {
+    console.log(1);
+    
     // Validate request body
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
