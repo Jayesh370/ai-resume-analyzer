@@ -1,0 +1,2 @@
+2026-05-28 00:10:31.003 [pool-3-thread-1] INFO  com.rs.mv.mvvs.client.catalog.from.scan.CurrentPathScanner - [client:400205]scan file in current open file directory(D:/game file/project/ai-resume-analyzer/ai-resume-analyzer/backend)
+2026-05-28 00:10:46.884 [pool-3-thread-1] INFO  com.rs.mv.mvvs.client.catalog.from.scan.CurrentPathScanner - [client:400205]scan file in current open file directory(D:/game file/project/ai-resume-analyzer/ai-resume-analyzer/backend)
