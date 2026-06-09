@@ -1,14 +1,6 @@
 const { analyzeResume } = require("./aiService");
+const { generateGeminiJson } = require("./aiGenerationService");
 const { normaliseContent } = require("./resumeBuilderService");
-
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-
-const stripCodeFences = (text = "") =>
-  text
-    .replace(/^```json\s*/i, "")
-    .replace(/^```\s*/i, "")
-    .replace(/```\s*$/i, "")
-    .trim();
 
 const fallbackTailor = async (content, jobDescription) => {
   const jobWords = jobDescription
@@ -34,6 +26,9 @@ const fallbackTailor = async (content, jobDescription) => {
       "Add measurable outcomes to the first two experience bullets.",
       "Move the most relevant technical skills into the top third of the resume.",
     ],
+    keywordsAdded: uniqueKeywords.filter(
+      (word) => !(content.skills || []).some((skill) => skill.toLowerCase().includes(word))
+    ),
     keywordGaps: uniqueKeywords.filter(
       (word) => !(content.skills || []).some((skill) => skill.toLowerCase().includes(word))
     ),
@@ -43,27 +38,7 @@ const fallbackTailor = async (content, jobDescription) => {
   };
 };
 
-const generateGeminiJson = async (prompt) => {
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.25, maxOutputTokens: 6000 },
-      }),
-    }
-  );
-
-  const data = await response.json();
-  if (!response.ok) throw new Error(data?.error?.message || "Gemini tailoring request failed.");
-
-  const raw = data?.candidates?.[0]?.content?.parts?.map((part) => part.text || "").join("") || "";
-  return JSON.parse(stripCodeFences(raw));
-};
-
-const tailorResume = async ({ content, jobDescription }) => {
+const tailorResume = async ({ content, jobDescription, companyName = "", jobTitle = "" }) => {
   const safeContent = normaliseContent(content);
   const jd = String(jobDescription || "").trim().slice(0, 8000);
 
@@ -72,8 +47,6 @@ const tailorResume = async ({ content, jobDescription }) => {
     err.statusCode = 422;
     throw err;
   }
-
-  if (!GEMINI_API_KEY) return fallbackTailor(safeContent, jd);
 
   try {
     const prompt = `
@@ -88,10 +61,14 @@ JOB DESCRIPTION:
 ${jd}
 """
 
+TARGET COMPANY: ${companyName || "Not specified"}
+JOB TITLE: ${jobTitle || "Not specified"}
+
 Return this JSON:
 {
   "tailoredContent": <same resume JSON shape, preserving truthful facts but rewriting summary, skills ordering, bullets, projects, achievements for the job>,
   "suggestions": ["specific improvement", "..."],
+  "keywordsAdded": ["keyword naturally added to resume", "..."],
   "keywordGaps": ["missing keyword", "..."],
   "atsBefore": <integer 0-100>,
   "atsAfter": <integer 0-100>
@@ -104,10 +81,14 @@ Rules:
 - Keep output ATS-readable and concise.
 `;
 
-    const parsed = await generateGeminiJson(prompt);
+    const parsed = await generateGeminiJson(prompt, () => fallbackTailor(safeContent, jd), {
+      temperature: 0.25,
+      maxOutputTokens: 6000,
+    });
     return {
       tailoredContent: normaliseContent(parsed.tailoredContent || safeContent),
       suggestions: Array.isArray(parsed.suggestions) ? parsed.suggestions.slice(0, 10) : [],
+      keywordsAdded: Array.isArray(parsed.keywordsAdded) ? parsed.keywordsAdded.slice(0, 20) : [],
       keywordGaps: Array.isArray(parsed.keywordGaps) ? parsed.keywordGaps.slice(0, 20) : [],
       atsBefore: Math.max(0, Math.min(100, parseInt(parsed.atsBefore, 10) || 0)),
       atsAfter: Math.max(0, Math.min(100, parseInt(parsed.atsAfter, 10) || 0)),

@@ -167,6 +167,7 @@ const tailorBuild = async (req, res, next) => {
       jobDescription,
       tailoringNotes: {
         suggestions: result.suggestions,
+        keywordsAdded: result.keywordsAdded,
         keywordGaps: result.keywordGaps,
         provider: result.provider,
       },

@@ -16,12 +16,12 @@ import ScoreCard from "../components/ScoreCard.jsx";
 import GlassCard from "../components/GlassCard.jsx";
 import {
   RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
-  ResponsiveContainer, Tooltip,
+  ResponsiveContainer, Tooltip, LineChart, Line, XAxis, YAxis, CartesianGrid,
 } from "recharts";
 import {
   Upload, Clock, FileText, ArrowRight,
   TrendingUp, Sparkles, ChevronRight, Target,
-  Zap, Award,
+  Zap, Award, MessagesSquare, Wand2, Briefcase,
 } from "lucide-react";
 
 const container = {
@@ -63,6 +63,12 @@ export default function Dashboard() {
     score: r.matchScore,
     fullMark: 100,
   }));
+  const atsTrend = (stats?.atsImprovementTrend || []).map((entry, index) => ({
+    name: entry.company_name || entry.job_title || `Tailor ${index + 1}`,
+    before: entry.ats_before || 0,
+    after: entry.ats_after || 0,
+  }));
+  const jobMatchTrend = stats?.jobMatchTrend || [];
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background:"var(--bg-primary)" }}>
@@ -111,17 +117,28 @@ export default function Dashboard() {
 
             {/* ── Stats Row ─────────────────────────────────────────── */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-              <StatsCard icon={FileText}    label="Resumes Uploaded" value={stats?.totalResumes ?? 0}  color="brand"   delay={0.05} />
-              <StatsCard icon={TrendingUp}  label="Analyses Run"     value={stats?.totalAnalyses ?? 0} color="emerald" delay={0.10} />
+              <StatsCard icon={FileText} label="Resumes Uploaded" value={stats?.totalResumes ?? 0} color="brand" delay={0.05} />
+              <StatsCard icon={TrendingUp} label="Average ATS" value={stats?.avgAtsScore != null ? stats.avgAtsScore : "N/A"} color="emerald" delay={0.10} />
+              <StatsCard icon={Target} label="Tailored Resumes" value={stats?.totalTailoredResumes ?? 0} color="blue" delay={0.15} />
+              <StatsCard icon={Wand2} label="Total Rewrites" value={stats?.totalRewrites ?? 0} color="brand" delay={0.20} />
+              <StatsCard icon={MessagesSquare} label="Total Interviews" value={stats?.totalInterviews ?? 0} color="emerald" delay={0.25} />
+              <StatsCard
+                icon={Award}
+                label="Avg Interview"
+                value={stats?.averageInterviewScore ?? "N/A"}
+                sub={stats?.bestInterviewScore ? `Best ${stats.bestInterviewScore}` : "No score yet"}
+                color="amber"
+                delay={0.30}
+              />
               <StatsCard
                 icon={Award}
                 label="Latest ATS Score"
                 value={stats?.latestAnalysis?.ats_score != null ? `${stats.latestAnalysis.ats_score}` : "—"}
                 sub={stats?.latestAnalysis ? "out of 100" : "No analysis yet"}
                 color="amber"
-                delay={0.15}
+                delay={0.35}
               />
-              <StatsCard icon={Sparkles}    label="AI Provider"      value="Gemini" sub="Google AI"  color="blue"    delay={0.20} />
+              <StatsCard icon={Sparkles} label="Analyses Run" value={stats?.totalAnalyses ?? 0} sub="AI reports" color="blue" delay={0.40} />
             </div>
 
             {/* ── Main Grid ─────────────────────────────────────────── */}
@@ -219,6 +236,8 @@ export default function Dashboard() {
                   <div className="space-y-2">
                     {[
                       { to:"/upload",  icon:Upload, label:"New Analysis",  sub:"Analyze a resume",    color:"text-brand-400",   bg:"bg-brand-500/10 border-brand-500/20"   },
+                      { to:"/resume-tailoring", icon:Briefcase, label:"Tailor Resume", sub:"Target a role", color:"text-blue-400", bg:"bg-blue-500/10 border-blue-500/20" },
+                      { to:"/interviews", icon:MessagesSquare, label:"Mock Interview", sub:"Practice answers", color:"text-brand-400", bg:"bg-brand-500/10 border-brand-500/20" },
                       { to:"/history", icon:Clock,  label:"View History",  sub:"Past analyses",       color:"text-emerald-400", bg:"bg-emerald-500/10 border-emerald-500/20" },
                       { to:"/profile", icon:FileText,label:"My Profile",  sub:"Update your info",    color:"text-amber-400",   bg:"bg-amber-500/10 border-amber-500/20"   },
                     ].map(({ to, icon:Icon, label, sub, color, bg }) => (
@@ -236,6 +255,53 @@ export default function Dashboard() {
                       </Link>
                     ))}
                   </div>
+                </GlassCard>
+              </motion.div>
+            </div>
+
+            <div className="grid lg:grid-cols-2 gap-6 mb-6">
+              <motion.div variants={item}>
+                <GlassCard animate={false}>
+                  <h2 className="section-title flex items-center gap-2 mb-5">
+                    <TrendingUp className="h-5 w-5 text-emerald-400" />
+                    ATS Improvement Trend
+                  </h2>
+                  {atsTrend.length ? (
+                    <ResponsiveContainer width="100%" height={240}>
+                      <LineChart data={atsTrend}>
+                        <CartesianGrid stroke="rgba(255,255,255,0.06)" />
+                        <XAxis dataKey="name" tick={{ fill:"var(--text-muted)", fontSize:11 }} tickLine={false} axisLine={false} />
+                        <YAxis domain={[0,100]} tick={{ fill:"var(--text-muted)", fontSize:11 }} tickLine={false} axisLine={false} />
+                        <Tooltip contentStyle={{ background:"var(--bg-card)", border:"1px solid var(--border)", borderRadius:12 }} />
+                        <Line type="monotone" dataKey="before" stroke="#f59e0b" strokeWidth={2} dot={{ r:3 }} />
+                        <Line type="monotone" dataKey="after" stroke="#10b981" strokeWidth={2} dot={{ r:3 }} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <p className="text-sm" style={{ color:"var(--text-muted)" }}>Tailored resume score improvements appear here.</p>
+                  )}
+                </GlassCard>
+              </motion.div>
+
+              <motion.div variants={item}>
+                <GlassCard animate={false}>
+                  <h2 className="section-title flex items-center gap-2 mb-5">
+                    <Briefcase className="h-5 w-5 text-brand-400" />
+                    Job Match Trend
+                  </h2>
+                  {jobMatchTrend.length ? (
+                    <ResponsiveContainer width="100%" height={240}>
+                      <LineChart data={jobMatchTrend}>
+                        <CartesianGrid stroke="rgba(255,255,255,0.06)" />
+                        <XAxis dataKey="label" tick={{ fill:"var(--text-muted)", fontSize:11 }} tickLine={false} axisLine={false} />
+                        <YAxis domain={[0,100]} tick={{ fill:"var(--text-muted)", fontSize:11 }} tickLine={false} axisLine={false} />
+                        <Tooltip contentStyle={{ background:"var(--bg-card)", border:"1px solid var(--border)", borderRadius:12 }} />
+                        <Line type="monotone" dataKey="score" stroke="#8b5cf6" strokeWidth={2} dot={{ r:3 }} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <p className="text-sm" style={{ color:"var(--text-muted)" }}>Job match score history appears after running job matches.</p>
+                  )}
                 </GlassCard>
               </motion.div>
             </div>

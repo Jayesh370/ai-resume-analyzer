@@ -5,13 +5,15 @@ import { useAuth } from "../context/AuthContext.jsx";
 import { useTheme } from "../context/ThemeContext.jsx";
 import {
   LayoutDashboard, Upload, Clock, User, LogOut,
-  BrainCircuit, Menu, X, Sun, Moon, Briefcase, FilePenLine,
+  BrainCircuit, Menu, X, Sun, Moon, Briefcase, FilePenLine, MessagesSquare, Target,
 } from "lucide-react";
 
 const NAV_ITEMS = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/upload",    label: "Analyze",   icon: Upload          },
   { to: "/resume-builder", label: "Builder", icon: FilePenLine  },
+  { to: "/resume-tailoring", label: "Tailor", icon: Target },
+  { to: "/interviews", label: "Interview", icon: MessagesSquare },
   { to: "/job-match", label: "Job Match", icon: Briefcase       },  // ← NEW
   { to: "/history",   label: "History",   icon: Clock           },
   { to: "/profile",   label: "Profile",   icon: User            },

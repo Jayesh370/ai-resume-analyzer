@@ -18,6 +18,9 @@ import JobMatchResult from "./pages/JobMatchResult.jsx";
 import ResumeBuilder from "./pages/ResumeBuilder.jsx";
 import ResumeEditor from "./pages/ResumeEditor.jsx";
 import ResumeTailor from "./pages/ResumeTailor.jsx";
+import ResumeRewriter from "./pages/ResumeRewriter.jsx";
+import ResumeTailoringEngine from "./pages/ResumeTailoringEngine.jsx";
+import InterviewDashboard from "./pages/InterviewDashboard.jsx";
 
 export default function App() {
   return (
@@ -54,6 +57,9 @@ export default function App() {
               <Route path="/profile" element={<Profile />} />
               <Route path="/job-match" element={<JobMatch />} />
               <Route path="/job-match/:id" element={<JobMatchResult />} />
+              <Route path="/resume-rewriter/:analysisId" element={<ResumeRewriter />} />
+              <Route path="/resume-tailoring" element={<ResumeTailoringEngine />} />
+              <Route path="/interviews" element={<InterviewDashboard />} />
               <Route path="/resume-builder" element={<ResumeBuilder />} />
               <Route path="/resume-builder/:id/tailor" element={<ResumeTailor />} />
               <Route path="/resume-builder/:id" element={<ResumeEditor />} />

@@ -19,7 +19,7 @@ import {
 import {
   ArrowLeft, CheckCircle2, AlertCircle, MessageSquare,
   Target, Lightbulb, Layers, FileText, Cpu, Plus,
-  ChevronDown, ChevronUp, Sparkles,
+  ChevronDown, ChevronUp, Sparkles, Wand2, MessagesSquare,
 } from "lucide-react";
 
 const container = {
@@ -183,9 +183,20 @@ export default function AnalysisResult() {
                   )}
                 </div>
               </div>
-              <Link to="/upload" className="btn-primary text-sm">
-                <Sparkles className="h-4 w-4" /> Analyze Another
-              </Link>
+              <div className="flex flex-wrap gap-3">
+                <Link to={`/resume-rewriter/${id}`} className="btn-secondary text-sm">
+                  <Wand2 className="h-4 w-4" /> Rewrite Resume
+                </Link>
+                <Link to="/resume-tailoring" className="btn-secondary text-sm">
+                  <Target className="h-4 w-4" /> Tailor Resume
+                </Link>
+                <Link to="/interviews" className="btn-secondary text-sm">
+                  <MessagesSquare className="h-4 w-4" /> Mock Interview
+                </Link>
+                <Link to="/upload" className="btn-primary text-sm">
+                  <Sparkles className="h-4 w-4" /> Analyze Another
+                </Link>
+              </div>
             </div>
           </motion.div>
 

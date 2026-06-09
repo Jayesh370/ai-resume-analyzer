@@ -6,6 +6,10 @@
 const path = require("path");
 const Resume = require("../models/Resume");
 const Analysis = require("../models/Analysis");
+const InterviewSession = require("../models/InterviewSession");
+const JobMatch = require("../models/JobMatch");
+const ResumeRewrite = require("../models/ResumeRewrite");
+const ResumeTailoring = require("../models/ResumeTailoring");
 const { extractTextFromPDF } = require("../services/pdfService");
 const { analyzeResume } = require("../services/aiService");
 
@@ -104,17 +108,58 @@ const deleteAnalysis = async (req, res, next) => {
 // ── GET /api/analyses/dashboard — Stats for dashboard ────────────────────
 const getDashboardStats = async (req, res, next) => {
   try {
-    const [totalAnalyses, latestAnalysis, resumes] = await Promise.all([
+    const [
+      totalAnalyses,
+      latestAnalysis,
+      resumes,
+      totalTailoredResumes,
+      totalRewrites,
+      totalInterviews,
+      interviewStats,
+      jobMatches,
+      atsImprovementTrend,
+      analyses,
+    ] = await Promise.all([
       Analysis.countByUserId(req.user.id),
       Analysis.findLatestByUserId(req.user.id),
       require("../models/Resume").findByUserId(req.user.id),
+      ResumeTailoring.countByUserId(req.user.id),
+      ResumeRewrite.countByUserId(req.user.id),
+      InterviewSession.countByUserId(req.user.id),
+      InterviewSession.statsByUserId(req.user.id),
+      JobMatch.findByUserId(req.user.id),
+      ResumeTailoring.trendByUserId(req.user.id),
+      Analysis.findByUserId(req.user.id),
     ]);
+    const avgAtsScore =
+      analyses.length > 0
+        ? Math.round(analyses.reduce((sum, item) => sum + Number(item.ats_score || 0), 0) / analyses.length)
+        : null;
 
     res.json({
       success: true,
       stats: {
         totalAnalyses,
         totalResumes: resumes.length,
+        avgAtsScore,
+        totalTailoredResumes,
+        totalRewrites,
+        totalInterviews,
+        averageInterviewScore:
+          interviewStats.average_score == null ? null : Number(interviewStats.average_score).toFixed(1),
+        bestInterviewScore: interviewStats.best_score == null ? null : Number(interviewStats.best_score).toFixed(1),
+        interviewTrend: interviewStats.trend,
+        atsImprovementTrend,
+        jobMatchTrend: jobMatches
+          .slice()
+          .reverse()
+          .slice(-12)
+          .map((match) => ({
+            id: match.id,
+            label: match.job_title || "Job Match",
+            score: match.match_score,
+            created_at: match.created_at,
+          })),
         latestAnalysis,
       },
     });

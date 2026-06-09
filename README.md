@@ -1,139 +1,168 @@
-# 🧠 ResumeAI — AI Resume Analyzer + Interview Prep Platform
+# ResumeAI - AI Resume Analyzer & Career Preparation Platform
 
-A full-stack web application where users can sign up, upload a resume PDF, and receive:
-- **ATS-style resume score** (0–100)
-- **Skill extraction** from the resume
-- **Job-role match analysis** (top 3 roles)
-- **Missing skill suggestions**
-- **Interview questions** tailored to their resume
-- **History dashboard** to save and revisit analyses
+ResumeAI is a full-stack career preparation platform that helps users analyze resumes, improve ATS performance, tailor resumes to job descriptions, build resume versions, match jobs, and practice mock interviews with AI feedback.
 
----
+## Features
 
-## 🏗️ Architecture Overview
+- JWT authentication with protected user workflows
+- PDF resume upload and text extraction
+- AI resume analysis with ATS score, detected skills, missing skills, role matches, and interview questions
+- Resume Builder with version history and ATS-friendly templates
+- AI Resume Rewriter with original text, improved text, and reason for improvement
+- Resume Tailoring Engine for job descriptions and target companies
+- Automatic tailored resume version creation
+- Job Match analysis with matched and missing keywords plus role-fit scoring
+- AI Mock Interview system with session types, answer scoring, feedback, and improved answers
+- Dashboard analytics with ATS trends, job match trends, rewrite counts, tailoring counts, and interview scores
+- Gemini AI with retry and fallback behavior so AI failures do not crash the app
 
-```
-┌──────────────────────────────────────────────────────────┐
-│  React + Tailwind (Vite)          Frontend  :5173         │
-│  ┌──────────┐  ┌────────────────────────────────────┐    │
-│  │AuthContext│  │Pages: Landing·Login·Register        │    │
-│  │ + JWT    │  │Dashboard·Upload·Result·History      │    │
-│  └──────────┘  │Profile                              │    │
-│                └────────────────────────────────────┘    │
-└────────────────────────────┬─────────────────────────────┘
-                             │ HTTP /api/*
-┌────────────────────────────▼─────────────────────────────┐
-│  Node.js + Express         Backend  :5000                 │
-│  ┌─────────────┐  ┌──────────────┐  ┌─────────────────┐  │
-│  │  JWT Auth   │  │ Multer Upload│  │ OpenAI / Mock AI│  │
-│  └─────────────┘  └──────────────┘  └─────────────────┘  │
-│  Routes: /auth · /resumes · /analyses · /users            │
-└────────────────────────────┬─────────────────────────────┘
-                             │ mysql2/promise
-┌────────────────────────────▼─────────────────────────────┐
-│  MySQL 8+          Database                               │
-│  users · resumes · analyses · interview_questions         │
-└──────────────────────────────────────────────────────────┘
-```
+## Tech Stack
 
----
+Frontend:
 
-## 📁 Folder Structure
+- React
+- Vite
+- Tailwind CSS
+- Axios
+- React Router
+- Recharts
+- Lucide React
+- Framer Motion
 
-```
+Backend:
+
+- Node.js
+- Express.js
+- JWT Authentication
+- MySQL via `mysql2`
+- Multer
+- PDF parsing
+- Gemini AI
+
+Deployment targets:
+
+- Frontend: Vercel
+- Backend: Render
+- Database: Aiven MySQL
+
+## Project Structure
+
+```text
 ai-resume-analyzer/
-├── backend/
-│   ├── config/db.js              # MySQL pool
-│   ├── controllers/
-│   │   ├── authController.js
-│   │   ├── resumeController.js
-│   │   ├── analysisController.js
-│   │   └── userController.js
-│   ├── middleware/
-│   │   ├── auth.js               # JWT verify
-│   │   ├── upload.js             # Multer PDF
-│   │   └── errorHandler.js
-│   ├── models/
-│   │   ├── User.js
-│   │   ├── Resume.js
-│   │   └── Analysis.js
-│   ├── routes/
-│   │   ├── auth.js · resume.js · analysis.js · user.js
-│   ├── services/
-│   │   ├── aiService.js          # Selects OpenAI or mock
-│   │   ├── mockAiService.js      # Works without API key
-│   │   └── pdfService.js         # pdf-parse
-│   ├── utils/helpers.js
-│   ├── uploads/                  # PDF storage (gitignored)
-│   ├── .env.example
-│   ├── package.json
-│   └── server.js
-├── frontend/
-│   ├── src/
-│   │   ├── components/
-│   │   │   ├── Navbar.jsx · Footer.jsx
-│   │   │   ├── ProtectedRoute.jsx
-│   │   │   ├── LoadingSpinner.jsx
-│   │   │   └── ScoreCard.jsx
-│   │   ├── context/AuthContext.jsx
-│   │   ├── pages/
-│   │   │   ├── Landing.jsx · Login.jsx · Register.jsx
-│   │   │   ├── Dashboard.jsx · ResumeUpload.jsx
-│   │   │   ├── AnalysisResult.jsx · History.jsx
-│   │   │   └── Profile.jsx
-│   │   ├── services/api.js        # Axios + auth interceptor
-│   │   ├── App.jsx · main.jsx · index.css
-│   ├── .env.example
-│   ├── package.json
-│   ├── tailwind.config.js
-│   └── vite.config.js
-├── database/schema.sql
-└── README.md
+|-- backend/
+|   |-- config/
+|   |   `-- db.js
+|   |-- controllers/
+|   |   |-- analysisController.js
+|   |   |-- authController.js
+|   |   |-- interviewController.js
+|   |   |-- jobMatchController.js
+|   |   |-- resumeBuilderController.js
+|   |   |-- resumeController.js
+|   |   |-- resumeRewriteController.js
+|   |   |-- resumeTailoringController.js
+|   |   `-- userController.js
+|   |-- middleware/
+|   |   |-- auth.js
+|   |   |-- errorHandler.js
+|   |   `-- upload.js
+|   |-- models/
+|   |   |-- Analysis.js
+|   |   |-- InterviewAnswer.js
+|   |   |-- InterviewSession.js
+|   |   |-- JobMatch.js
+|   |   |-- Resume.js
+|   |   |-- ResumeBuild.js
+|   |   |-- ResumeRewrite.js
+|   |   |-- ResumeTailoring.js
+|   |   |-- ResumeTemplate.js
+|   |   `-- User.js
+|   |-- routes/
+|   |   |-- analysis.js
+|   |   |-- auth.js
+|   |   |-- interview.js
+|   |   |-- jobMatch.js
+|   |   |-- resume.js
+|   |   |-- resumeBuilder.js
+|   |   |-- resumeRewrite.js
+|   |   |-- resumeTailoring.js
+|   |   `-- user.js
+|   |-- services/
+|   |   |-- aiGenerationService.js
+|   |   |-- aiService.js
+|   |   |-- interviewService.js
+|   |   |-- jobMatchService.js
+|   |   |-- pdfService.js
+|   |   |-- resumeBuilderService.js
+|   |   |-- resumeRewriteService.js
+|   |   `-- resumeTailoringService.js
+|   |-- package.json
+|   `-- server.js
+|-- database/
+|   |-- schema.sql
+|   `-- 2026_06_05_career_prep_features.sql
+|-- frontend/
+|   |-- src/
+|   |   |-- components/
+|   |   |-- context/
+|   |   |-- pages/
+|   |   |   |-- AnalysisResult.jsx
+|   |   |   |-- Dashboard.jsx
+|   |   |   |-- InterviewDashboard.jsx
+|   |   |   |-- JobMatch.jsx
+|   |   |   |-- ResumeBuilder.jsx
+|   |   |   |-- ResumeRewriter.jsx
+|   |   |   |-- ResumeTailor.jsx
+|   |   |   `-- ResumeTailoringEngine.jsx
+|   |   |-- services/
+|   |   |-- App.jsx
+|   |   `-- main.jsx
+|   |-- package.json
+|   `-- vite.config.js
+`-- README.md
 ```
 
----
+## Database Tables
 
-## ⚙️ Prerequisites
+Core tables:
 
-| Tool     | Version  |
-|----------|----------|
-| Node.js  | ≥ 18.x   |
-| npm      | ≥ 9.x    |
-| MySQL    | ≥ 8.0    |
+- `users`
+- `resumes`
+- `analyses`
+- `interview_questions`
+- `job_matches`
+- `resume_templates`
+- `resume_versions`
 
----
+Career-prep feature tables:
 
-## 🚀 Local Setup — Step by Step
+- `resume_rewrites`
+- `resume_tailorings`
+- `interview_sessions`
+- `interview_answers`
 
-### 1. Clone the repository
-
-```bash
-git clone https://github.com/yourname/ai-resume-analyzer.git
-cd ai-resume-analyzer
-```
-
-### 2. Set up the database
+For a fresh database, run:
 
 ```bash
-# Log into MySQL
-mysql -u root -p
-
-# Inside MySQL shell:
-CREATE DATABASE resume_analyzer CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-exit;
-
-# Run the schema
 mysql -u root -p resume_analyzer < database/schema.sql
 ```
 
-### 3. Configure the backend
+For an existing database, apply the feature migration:
+
+```bash
+mysql -u root -p resume_analyzer < database/2026_06_05_career_prep_features.sql
+```
+
+## Local Setup
+
+### 1. Install Backend Dependencies
 
 ```bash
 cd backend
-cp .env.example .env
+npm install
 ```
 
-Edit `.env`:
+Create `backend/.env`:
 
 ```env
 PORT=5000
@@ -145,182 +174,214 @@ DB_USER=root
 DB_PASSWORD=your_mysql_password
 DB_NAME=resume_analyzer
 
-JWT_SECRET=change_this_to_a_long_random_string
+JWT_SECRET=change_this_to_a_long_random_secret
 JWT_EXPIRES_IN=7d
 
-# Optional — leave blank to use the built-in mock AI
-OPENAI_API_KEY=sk-...
+GEMINI_API_KEY=your_gemini_api_key
+CLIENT_URL=http://localhost:5173
 
 MAX_FILE_SIZE_MB=5
 UPLOAD_DIR=uploads
-CLIENT_URL=http://localhost:5173
 ```
 
-### 4. Install & start the backend
+If `GEMINI_API_KEY` is not set, the app uses fallback or mock responses where available.
+
+### 2. Start Backend
 
 ```bash
-# Still inside /backend
-npm install
 npm run dev
 ```
 
-You should see:
-```
-✅  MySQL connected successfully
-🚀  Server running on http://localhost:5000
-🤖  AI Service  : Mock (no key set)
+Backend URL:
+
+```text
+http://localhost:5000
 ```
 
-### 5. Configure the frontend
+Health check:
+
+```text
+GET /api/health
+```
+
+### 3. Install Frontend Dependencies
 
 ```bash
 cd ../frontend
-cp .env.example .env
+npm install
 ```
 
-`.env` content (Vite proxies /api → backend, so usually no changes needed):
-```env
-VITE_API_BASE_URL=http://localhost:5000
-```
-
-### 6. Install & start the frontend
+### 4. Start Frontend
 
 ```bash
-npm install
 npm run dev
 ```
 
-Open **http://localhost:5173** in your browser.
+Frontend URL:
 
----
-
-## 🧪 Testing Steps
-
-### Manual testing flow
-
-1. **Register** at `/register` — creates a new account
-2. **Log in** at `/login`
-3. **Upload a PDF resume** at `/upload`
-4. Wait for the 4-step progress indicator to complete
-5. **View the analysis result** — score, skills, job roles, missing skills, questions
-6. Go to **History** at `/history` — see all past analyses
-7. Click **View** on any row to revisit a result
-8. Click **Delete** to remove an analysis
-9. Visit **Profile** at `/profile` — update name/email or change password
-
-### API testing with curl
-
-```bash
-# Register
-curl -X POST http://localhost:5000/api/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"name":"Jane Doe","email":"jane@example.com","password":"Secret123"}'
-
-# Login (copy token from response)
-curl -X POST http://localhost:5000/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"jane@example.com","password":"Secret123"}'
-
-# Upload resume (replace TOKEN and path)
-curl -X POST http://localhost:5000/api/resumes/upload \
-  -H "Authorization: Bearer TOKEN" \
-  -F "resume=@/path/to/resume.pdf"
-
-# Run analysis (use resumeId from upload response)
-curl -X POST http://localhost:5000/api/analyses/run \
-  -H "Authorization: Bearer TOKEN" \
-  -H "Content-Type: application/json" \
-  -d '{"resumeId": 1}'
-
-# Get all analyses
-curl http://localhost:5000/api/analyses \
-  -H "Authorization: Bearer TOKEN"
+```text
+http://localhost:5173
 ```
 
----
+## Main Frontend Routes
 
-## 🤖 AI Service
+- `/` - landing page
+- `/login` - login
+- `/register` - registration
+- `/dashboard` - analytics dashboard
+- `/upload` - upload and analyze resume
+- `/analysis/:id` - resume analysis report
+- `/resume-rewriter/:analysisId` - AI Resume Rewriter
+- `/resume-tailoring` - uploaded-resume tailoring engine
+- `/resume-builder` - resume versions and builder
+- `/resume-builder/:id` - resume version editor
+- `/resume-builder/:id/tailor` - builder-based tailoring flow
+- `/job-match` - job match analyzer
+- `/job-match/:id` - job match result
+- `/interviews` - AI Mock Interview dashboard
+- `/history` - analysis history
+- `/profile` - user profile
 
-The app works in **two modes**:
+## Main API Routes
 
-| Mode     | Requirement       | Quality     |
-|----------|-------------------|-------------|
-| **Mock** | No key needed     | Deterministic, keyword-based scoring |
-| **OpenAI GPT-4o** | `OPENAI_API_KEY` in `.env` | Full AI-quality analysis |
+### Auth
 
-The mock service is production-ready for demos. Simply set `OPENAI_API_KEY` to upgrade.
+- `POST /api/auth/register`
+- `POST /api/auth/login`
 
----
+### Resumes
 
-## 🌐 Deployment Guide
+- `POST /api/resumes/upload`
+- `GET /api/resumes`
+- `DELETE /api/resumes/:id`
 
-### Backend (Railway / Render / Heroku)
+### Analyses
 
-1. Set environment variables matching `.env.example` in your host's dashboard
-2. For `UPLOAD_DIR`, use a persistent volume or switch to S3 (see note below)
-3. Set `NODE_ENV=production`
-4. Start command: `node server.js`
+- `POST /api/analyses/run`
+- `GET /api/analyses`
+- `GET /api/analyses/dashboard`
+- `GET /api/analyses/:id`
+- `DELETE /api/analyses/:id`
 
-> **Note:** On ephemeral file systems (Heroku, Railway without volumes), uploaded PDFs are lost on restart. For production, store PDFs in **AWS S3** or **Cloudinary** and save the URL in the DB instead of a local path.
+### Resume Rewriter
 
-### Frontend (Vercel / Netlify)
+- `POST /api/resume-rewrites/run`
+- `GET /api/resume-rewrites`
+- `GET /api/resume-rewrites/:id`
+- `POST /api/resume-rewrites/:id/save-version`
 
-1. Set `VITE_API_BASE_URL=https://your-backend-url.com`
-2. Update `CLIENT_URL` in the backend `.env` to your Vercel URL
-3. Build command: `npm run build`
-4. Publish directory: `dist`
+### Resume Tailoring
 
-### Database (PlanetScale / Railway MySQL / AWS RDS)
+- `POST /api/resume-tailorings/run`
+- `GET /api/resume-tailorings`
+- `GET /api/resume-tailorings/:id`
 
-1. Create a MySQL 8 database
-2. Run `schema.sql` via the host's query console
-3. Update `DB_*` variables in backend config
+### Resume Builder
 
----
+- `GET /api/resume-builder/templates`
+- `GET /api/resume-builder`
+- `POST /api/resume-builder`
+- `GET /api/resume-builder/:id`
+- `PUT /api/resume-builder/:id`
+- `POST /api/resume-builder/:id/duplicate`
+- `POST /api/resume-builder/:id/tailor`
+- `PATCH /api/resume-builder/:id/favorite`
+- `GET /api/resume-builder/:id/export`
+- `DELETE /api/resume-builder/:id`
 
-## 🔐 Security Checklist
+### Job Match
 
-- [x] Passwords hashed with bcrypt (cost factor 12)
-- [x] JWT tokens expire after 7 days
-- [x] Helmet.js sets secure HTTP headers
-- [x] Rate limiting on all routes (100/15 min); stricter on `/auth` (10/15 min)
-- [x] File type validation (PDF only) + size cap (5 MB)
-- [x] Input validation via express-validator on all write endpoints
-- [x] CORS restricted to `CLIENT_URL`
-- [ ] TODO: HTTPS in production (handled by your hosting provider / nginx)
-- [ ] TODO: Move PDF storage to S3 for scalable file handling
+- `POST /api/job-matches/analyze`
+- `GET /api/job-matches`
+- `GET /api/job-matches/:id`
+- `DELETE /api/job-matches/:id`
 
----
+### Interviews
 
-## 📦 Key Dependencies
+- `GET /api/interviews/stats`
+- `POST /api/interviews/sessions`
+- `GET /api/interviews/sessions`
+- `GET /api/interviews/sessions/:id`
+- `POST /api/interviews/sessions/:id/answers`
 
-### Backend
-| Package | Purpose |
-|---------|---------|
-| express | Web framework |
-| mysql2 | MySQL driver (Promise API) |
-| jsonwebtoken | JWT sign/verify |
-| bcryptjs | Password hashing |
-| multer | PDF file upload |
-| pdf-parse | Text extraction from PDFs |
-| openai | GPT-4o integration |
-| helmet | HTTP security headers |
-| express-rate-limit | Abuse protection |
-| express-validator | Input validation |
+## AI Behavior
 
-### Frontend
-| Package | Purpose |
-|---------|---------|
-| react + react-dom | UI library |
-| react-router-dom | Client-side routing |
-| axios | HTTP client |
-| react-hot-toast | Toast notifications |
-| recharts | Charts (bar, radar) |
-| lucide-react | Icon set |
-| tailwindcss | Utility CSS |
+Gemini is used for:
 
----
+- Resume analysis
+- Resume rewriting
+- Resume tailoring
+- Job matching
+- Mock interview question generation
+- Mock interview answer evaluation
 
-## 📄 License
+AI calls use retry handling. If Gemini fails after retries, the backend returns a meaningful fallback response instead of crashing the application.
 
-MIT — free to use and modify.
+## Manual Test Flow
+
+1. Register a user.
+2. Log in.
+3. Upload a PDF resume.
+4. Run resume analysis.
+5. Open the analysis report.
+6. Click `Rewrite Resume` and save a rewritten version.
+7. Open `Tailor` and generate a resume for a job description and company.
+8. Confirm a tailored version is created in Resume Builder.
+9. Run a job match.
+10. Open `Interview` and complete a mock interview question.
+11. Return to Dashboard and confirm updated widgets and trends.
+
+## Useful Commands
+
+Backend:
+
+```bash
+cd backend
+npm run dev
+npm start
+node --check server.js
+```
+
+Frontend:
+
+```bash
+cd frontend
+npm run dev
+npm run build
+```
+
+## Deployment Notes
+
+### Backend on Render
+
+- Set all backend environment variables in Render.
+- Use `node server.js` as the start command.
+- Set `CLIENT_URL` to the deployed Vercel frontend URL.
+- Use persistent file storage or external object storage for production resume uploads.
+
+### Frontend on Vercel
+
+- Set the API base URL to the deployed Render backend if the frontend is configured to read it.
+- Build command: `npm run build`
+- Output directory: `dist`
+
+### Database on Aiven MySQL
+
+- Create a MySQL database.
+- Run `database/schema.sql` for fresh setup.
+- Run new migration files when upgrading an existing database.
+- Configure `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, and `DB_NAME` in the backend environment.
+
+## Security
+
+- Passwords are hashed with bcrypt.
+- JWT protects all authenticated routes.
+- Helmet sets common secure HTTP headers.
+- Rate limiting protects API routes.
+- Resume upload is restricted to PDF files through the upload middleware.
+- CORS is scoped through `CLIENT_URL`.
+- User-owned resources are scoped by `req.user.id` in controllers and models.
+
+## License
+
+MIT

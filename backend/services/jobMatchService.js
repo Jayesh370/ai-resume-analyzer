@@ -6,6 +6,7 @@
  */
 
 const mockService = require("./mockJobMatchService");
+const { withRetry } = require("./aiGenerationService");
 
 let geminiModel = null;
 
@@ -204,9 +205,9 @@ const analyzeJobMatch = async (
     );
 
     const result =
-      await model.generateContent(
+      await withRetry(() => model.generateContent(
         prompt
-      );
+      ));
 
     const rawText =
       result.response.text();

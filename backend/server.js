@@ -22,6 +22,9 @@ const analysisRoutes = require("./routes/analysis");
 const userRoutes     = require("./routes/user");
 const jobMatchRoutes = require("./routes/jobMatch");  // ← NEW
 const resumeBuilderRoutes = require("./routes/resumeBuilder");
+const resumeRewriteRoutes = require("./routes/resumeRewrite");
+const resumeTailoringRoutes = require("./routes/resumeTailoring");
+const interviewRoutes = require("./routes/interview");
 
 
 const app = express();
@@ -62,6 +65,9 @@ app.use("/api/analyses",    analysisRoutes);
 app.use("/api/users",       userRoutes);
 app.use("/api/job-matches", jobMatchRoutes);  // ← NEW
 app.use("/api/resume-builder", resumeBuilderRoutes);
+app.use("/api/resume-rewrites", resumeRewriteRoutes);
+app.use("/api/resume-tailorings", resumeTailoringRoutes);
+app.use("/api/interviews", interviewRoutes);
 
 
 // Health check

@@ -5,6 +5,7 @@
  */
 
 const mockAi = require("./mockAiService");
+const { withRetry } = require("./aiGenerationService");
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
@@ -63,7 +64,7 @@ const safeParse = (value, fallback) => {
 
 const listModels = async () => {
   const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}`;
-  const res = await fetch(url);
+  const res = await withRetry(() => fetch(url));
   const data = await res.json();
 
   if (!res.ok) {
@@ -129,7 +130,7 @@ return {
       throw new Error("No Gemini model with generateContent support was returned by models.list");
     }
 
-    const response = await fetch(
+    const response = await withRetry(() => fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${GEMINI_API_KEY}`,
       {
         method: "POST",
@@ -146,7 +147,7 @@ return {
           },
         }),
       }
-    );
+    ));
 
     const data = await response.json();
 

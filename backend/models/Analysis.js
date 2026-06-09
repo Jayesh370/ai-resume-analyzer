@@ -121,7 +121,7 @@ analysis.missing_skills = safeParse(analysis.missing_skills);
   async findLatestByUserId(userId) {
     const pool = getPool();
     const [rows] = await pool.execute(
-      `SELECT a.id, a.ats_score, a.summary, a.created_at, r.original_name AS resume_name
+      `SELECT a.id, a.ats_score, a.job_roles, a.summary, a.created_at, r.original_name AS resume_name
          FROM analyses a
          JOIN resumes r ON r.id = a.resume_id
         WHERE a.user_id = ?
@@ -129,7 +129,14 @@ analysis.missing_skills = safeParse(analysis.missing_skills);
         LIMIT 1`,
       [userId]
     );
-    return rows[0] || null;
+    const row = rows[0];
+    if (!row) return null;
+    try {
+      row.job_roles = typeof row.job_roles === "string" ? JSON.parse(row.job_roles || "[]") : row.job_roles || [];
+    } catch {
+      row.job_roles = [];
+    }
+    return row;
   },
 
   /** Count analyses for a user */
