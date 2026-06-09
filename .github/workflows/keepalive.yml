@@ -3,6 +3,7 @@ name: Keep MySQL Alive
 on:
   schedule:
     - cron: "*/5 * * * *"
+  workflow_dispatch:
 
 jobs:
   ping:
