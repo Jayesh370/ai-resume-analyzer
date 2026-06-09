@@ -6,7 +6,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "http://localhost:5000/api",          // Vite dev proxy → http://localhost:5000/api
+  baseURL: "https://ai-resume-analyzer-x8un.onrender.com",          // Vite dev proxy → http://localhost:5000/api
   timeout: 30000,           // 30 s (AI calls can be slow)
   headers: { "Content-Type": "application/json" },
 });
