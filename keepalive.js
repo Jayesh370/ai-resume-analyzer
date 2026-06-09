@@ -6,6 +6,9 @@ async function pingDB() {
     user: process.env.DB_USER,
     password: process.env.DB_PASS,
     database: process.env.DB_NAME,
+    ssl: {
+      rejectUnauthorized: false
+    }
   });
 
   await conn.query("SELECT 1");
