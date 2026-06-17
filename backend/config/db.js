@@ -1,38 +1,54 @@
 /**
- * config/db.js — MySQL connection pool via mysql2/promise
+ * config/db.js — PostgreSQL connection pool via `pg` (Neon-hosted)
+ *
+ * MIGRATION NOTE (MySQL → Postgres):
+ *  - mysql2/promise  →  pg
+ *  - pool.execute()  →  pool.query()   (still works the same way for parameterised queries)
+ *  - [rows]          →  { rows }       (pg returns an object, not an array — every model file
+ *                                        that destructures results had to change because of this)
+ *  - Neon requires `?sslmode=require` in the connection string, or `ssl: { rejectUnauthorized: false }`
+ *    passed explicitly — same idea as the old Aiven MySQL SSL config, just a different driver.
  */
 
-const mysql = require("mysql2/promise");
+const { Pool } = require("pg");
 
 let pool;
 
 const connectDB = async () => {
-  pool = mysql.createPool({
-    host: process.env.DB_HOST,
-    port: Number(process.env.DB_PORT),
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
+  pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
 
-    // Required for Aiven
+    // Neon (like Aiven before) requires SSL. Neon's pooled connection strings
+    // already include ?sslmode=require, but we set this explicitly too so the
+    // app still works even if someone pastes a non-pooled / bare connection string.
     ssl: {
       rejectUnauthorized: false,
     },
 
-    waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0,
-    charset: "utf8mb4",
+    // Equivalent of mysql2's connectionLimit
+    max: 10,
+
+    // How long a client can sit idle in the pool before being closed
+    idleTimeoutMillis: 30000,
+
+    // How long to wait for a connection before throwing
+    connectionTimeoutMillis: 10000,
   });
 
   try {
-    const connection = await pool.getConnection();
-    console.log("✅ MySQL connected successfully");
-    connection.release();
+    const client = await pool.connect();
+    console.log("✅ PostgreSQL (Neon) connected successfully");
+    client.release();
   } catch (error) {
-    console.error("❌ MySQL connection failed:", error.message);
+    console.error("❌ PostgreSQL connection failed:", error.message);
     process.exit(1);
   }
+
+  // Surface unexpected pool-level errors (e.g. connection dropped) instead of
+  // letting them crash the process silently
+  pool.on("error", (err) => {
+    console.error("⚠️  Unexpected PostgreSQL pool error:", err.message);
+  });
 };
 
 const getPool = () => {

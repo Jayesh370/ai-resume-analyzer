@@ -1,3 +1,8 @@
+/**
+ * models/ResumeRewrite.js — Data-access layer for the `resume_rewrites` table
+ * Standard migration pattern, no MySQL-only constructs.
+ */
+
 const { getPool } = require("../config/db");
 
 const parseJson = (value, fallback) => {
@@ -18,10 +23,11 @@ const parseRewrite = (row) => ({
 const ResumeRewrite = {
   async create({ userId, resumeId, analysisId = null, originalContent, rewrittenContent, improvementSummary }) {
     const pool = getPool();
-    const [result] = await pool.execute(
+    const { rows } = await pool.query(
       `INSERT INTO resume_rewrites
        (user_id, resume_id, analysis_id, original_content, rewritten_content, improvement_summary)
-       VALUES (?, ?, ?, ?, ?, ?)`,
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING id`,
       [
         userId,
         resumeId,
@@ -31,16 +37,16 @@ const ResumeRewrite = {
         JSON.stringify(improvementSummary || []),
       ]
     );
-    return result.insertId;
+    return rows[0].id;
   },
 
   async findById(id, userId) {
     const pool = getPool();
-    const [rows] = await pool.execute(
+    const { rows } = await pool.query(
       `SELECT rr.*, r.original_name AS resume_name
        FROM resume_rewrites rr
        JOIN resumes r ON r.id = rr.resume_id
-       WHERE rr.id = ? AND rr.user_id = ?
+       WHERE rr.id = $1 AND rr.user_id = $2
        LIMIT 1`,
       [id, userId]
     );
@@ -49,11 +55,11 @@ const ResumeRewrite = {
 
   async findByUserId(userId) {
     const pool = getPool();
-    const [rows] = await pool.execute(
+    const { rows } = await pool.query(
       `SELECT rr.id, rr.resume_id, rr.analysis_id, rr.created_at, r.original_name AS resume_name
        FROM resume_rewrites rr
        JOIN resumes r ON r.id = rr.resume_id
-       WHERE rr.user_id = ?
+       WHERE rr.user_id = $1
        ORDER BY rr.created_at DESC`,
       [userId]
     );
@@ -62,8 +68,11 @@ const ResumeRewrite = {
 
   async countByUserId(userId) {
     const pool = getPool();
-    const [rows] = await pool.execute("SELECT COUNT(*) AS total FROM resume_rewrites WHERE user_id = ?", [userId]);
-    return rows[0].total;
+    const { rows } = await pool.query(
+      "SELECT COUNT(*) AS total FROM resume_rewrites WHERE user_id = $1",
+      [userId]
+    );
+    return Number(rows[0].total);
   },
 };
 

@@ -1,5 +1,20 @@
 /**
  * models/ResumeTemplate.js - Template catalogue access.
+ *
+ * MIGRATION NOTES (the two real logic changes in this file):
+ *
+ *  1. seedDefaults() used MySQL's:
+ *       INSERT ... ON DUPLICATE KEY UPDATE name = VALUES(name), ...
+ *     Postgres equivalent:
+ *       INSERT ... ON CONFLICT (template_id) DO UPDATE SET name = EXCLUDED.name, ...
+ *     This requires template_id to have a UNIQUE constraint, which it already
+ *     does in the schema (UNIQUE on template_id).
+ *
+ *  2. findActive() used MySQL's:
+ *       ORDER BY FIELD(template_id, 'modern-developer', 'professional-corporate', ...)
+ *     which is a MySQL-only function that doesn't exist in Postgres at all.
+ *     Postgres equivalent: a CASE expression that maps each template_id to
+ *     a sort rank, then ORDER BY that rank.
  */
 
 const { getPool } = require("../config/db");
@@ -40,15 +55,15 @@ const ResumeTemplate = {
     const pool = getPool();
     await Promise.all(
       DEFAULT_TEMPLATES.map((template) =>
-        pool.execute(
+        pool.query(
           `INSERT INTO resume_templates (template_id, name, category, accent, description)
-           VALUES (?, ?, ?, ?, ?)
-           ON DUPLICATE KEY UPDATE
-             name = VALUES(name),
-             category = VALUES(category),
-             accent = VALUES(accent),
-             description = VALUES(description),
-             is_active = 1`,
+           VALUES ($1, $2, $3, $4, $5)
+           ON CONFLICT (template_id) DO UPDATE SET
+             name        = EXCLUDED.name,
+             category    = EXCLUDED.category,
+             accent      = EXCLUDED.accent,
+             description = EXCLUDED.description,
+             is_active   = TRUE`,
           [template.templateId, template.name, template.category, template.accent, template.description]
         )
       )
@@ -58,11 +73,21 @@ const ResumeTemplate = {
   async findActive() {
     const pool = getPool();
     await this.seedDefaults();
-    const [rows] = await pool.execute(
-      `SELECT template_id AS templateId, name, category, accent, description
+
+    // MySQL: ORDER BY FIELD(template_id, 'modern-developer', 'professional-corporate', 'minimal-ats', 'creative-portfolio')
+    // Postgres: build the same fixed ordering with a CASE expression.
+    const { rows } = await pool.query(
+      `SELECT template_id AS "templateId", name, category, accent, description
        FROM resume_templates
-       WHERE is_active = 1
-       ORDER BY FIELD(template_id, 'modern-developer', 'professional-corporate', 'minimal-ats', 'creative-portfolio')`
+       WHERE is_active = TRUE
+       ORDER BY
+         CASE template_id
+           WHEN 'modern-developer'       THEN 1
+           WHEN 'professional-corporate' THEN 2
+           WHEN 'minimal-ats'            THEN 3
+           WHEN 'creative-portfolio'     THEN 4
+           ELSE 5
+         END`
     );
     return rows;
   },

@@ -1,6 +1,11 @@
 /**
  * models/ResumeBuild.js - Data access for resume_versions.
  * Kept as ResumeBuild to preserve the existing controller import boundary.
+ *
+ * Standard migration pattern. The `parseBuild()` helper is kept exactly as
+ * before — pg already parses JSONB into JS objects, so parseJson() acts as
+ * a harmless pass-through guard rather than doing real work, same as it
+ * effectively did under MySQL once JSON columns were fetched.
  */
 
 const { getPool } = require("../config/db");
@@ -39,11 +44,12 @@ const ResumeBuild = {
   }) {
     const pool = getPool();
     const sectionOrder = normaliseSectionOrder(content.sectionOrder);
-    const [result] = await pool.execute(
+    const { rows } = await pool.query(
       `INSERT INTO resume_versions
        (user_id, source_resume_id, parent_version_id, title, template_id, content, section_order, job_description,
         tailoring_notes, ats_before, ats_after, is_tailored)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+       RETURNING id`,
       [
         userId,
         sourceResumeId,
@@ -56,19 +62,20 @@ const ResumeBuild = {
         tailoringNotes ? JSON.stringify(tailoringNotes) : null,
         atsBefore,
         atsAfter,
-        isTailored ? 1 : 0,
+        // MySQL: TINYINT(1) accepted 1/0. Postgres: BOOLEAN expects true/false.
+        Boolean(isTailored),
       ]
     );
-    return result.insertId;
+    return rows[0].id;
   },
 
   async findByUserId(userId) {
     const pool = getPool();
-    const [rows] = await pool.execute(
+    const { rows } = await pool.query(
       `SELECT id, source_resume_id, parent_version_id, title, template_id, is_tailored, is_favorite,
               ats_before, ats_after, created_at, updated_at
        FROM resume_versions
-       WHERE user_id = ?
+       WHERE user_id = $1
        ORDER BY updated_at DESC`,
       [userId]
     );
@@ -77,10 +84,10 @@ const ResumeBuild = {
 
   async findById(id, userId) {
     const pool = getPool();
-    const [rows] = await pool.execute(
+    const { rows } = await pool.query(
       `SELECT *
        FROM resume_versions
-       WHERE id = ? AND user_id = ?
+       WHERE id = $1 AND user_id = $2
        LIMIT 1`,
       [id, userId]
     );
@@ -90,13 +97,13 @@ const ResumeBuild = {
   async update(id, userId, { title, templateId, content }) {
     const pool = getPool();
     const sectionOrder = normaliseSectionOrder(content.sectionOrder);
-    const [result] = await pool.execute(
+    const result = await pool.query(
       `UPDATE resume_versions
-       SET title = ?, template_id = ?, content = ?, section_order = ?
-       WHERE id = ? AND user_id = ?`,
+       SET title = $1, template_id = $2, content = $3, section_order = $4, updated_at = NOW()
+       WHERE id = $5 AND user_id = $6`,
       [title, templateId, JSON.stringify({ ...content, sectionOrder }), JSON.stringify(sectionOrder), id, userId]
     );
-    return result.affectedRows > 0;
+    return result.rowCount > 0;
   },
 
   async duplicate(id, userId) {
@@ -122,20 +129,20 @@ const ResumeBuild = {
 
   async setFavorite(id, userId, isFavorite) {
     const pool = getPool();
-    const [result] = await pool.execute(
-      "UPDATE resume_versions SET is_favorite = ? WHERE id = ? AND user_id = ?",
-      [isFavorite ? 1 : 0, id, userId]
+    const result = await pool.query(
+      "UPDATE resume_versions SET is_favorite = $1, updated_at = NOW() WHERE id = $2 AND user_id = $3",
+      [Boolean(isFavorite), id, userId]
     );
-    return result.affectedRows > 0;
+    return result.rowCount > 0;
   },
 
   async delete(id, userId) {
     const pool = getPool();
-    const [result] = await pool.execute(
-      "DELETE FROM resume_versions WHERE id = ? AND user_id = ?",
+    const result = await pool.query(
+      "DELETE FROM resume_versions WHERE id = $1 AND user_id = $2",
       [id, userId]
     );
-    return result.affectedRows > 0;
+    return result.rowCount > 0;
   },
 };
 

@@ -1,3 +1,8 @@
+/**
+ * models/ResumeTailoring.js — Data-access layer for the `resume_tailorings` table
+ * Standard migration pattern, no MySQL-only constructs.
+ */
+
 const { getPool } = require("../config/db");
 
 const parseJson = (value, fallback) => {
@@ -30,11 +35,12 @@ const ResumeTailoring = {
     tailoredResume,
   }) {
     const pool = getPool();
-    const [result] = await pool.execute(
+    const { rows } = await pool.query(
       `INSERT INTO resume_tailorings
        (user_id, resume_id, job_title, company_name, job_description, ats_before, ats_after,
         keywords_added, keywords_missing, tailored_resume)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+       RETURNING id`,
       [
         userId,
         resumeId,
@@ -48,16 +54,16 @@ const ResumeTailoring = {
         JSON.stringify(tailoredResume || {}),
       ]
     );
-    return result.insertId;
+    return rows[0].id;
   },
 
   async findById(id, userId) {
     const pool = getPool();
-    const [rows] = await pool.execute(
+    const { rows } = await pool.query(
       `SELECT rt.*, r.original_name AS resume_name
        FROM resume_tailorings rt
        JOIN resumes r ON r.id = rt.resume_id
-       WHERE rt.id = ? AND rt.user_id = ?
+       WHERE rt.id = $1 AND rt.user_id = $2
        LIMIT 1`,
       [id, userId]
     );
@@ -66,10 +72,10 @@ const ResumeTailoring = {
 
   async findByUserId(userId) {
     const pool = getPool();
-    const [rows] = await pool.execute(
+    const { rows } = await pool.query(
       `SELECT id, resume_id, job_title, company_name, ats_before, ats_after, created_at
        FROM resume_tailorings
-       WHERE user_id = ?
+       WHERE user_id = $1
        ORDER BY created_at DESC`,
       [userId]
     );
@@ -78,16 +84,19 @@ const ResumeTailoring = {
 
   async countByUserId(userId) {
     const pool = getPool();
-    const [rows] = await pool.execute("SELECT COUNT(*) AS total FROM resume_tailorings WHERE user_id = ?", [userId]);
-    return rows[0].total;
+    const { rows } = await pool.query(
+      "SELECT COUNT(*) AS total FROM resume_tailorings WHERE user_id = $1",
+      [userId]
+    );
+    return Number(rows[0].total);
   },
 
   async trendByUserId(userId) {
     const pool = getPool();
-    const [rows] = await pool.execute(
+    const { rows } = await pool.query(
       `SELECT id, company_name, job_title, ats_before, ats_after, created_at
        FROM resume_tailorings
-       WHERE user_id = ?
+       WHERE user_id = $1
        ORDER BY created_at ASC
        LIMIT 12`,
       [userId]
