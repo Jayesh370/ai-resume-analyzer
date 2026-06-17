@@ -34,7 +34,7 @@ Backend:
 - Node.js
 - Express.js
 - JWT Authentication
-- MySQL via `mysql2`
+- PostgreSQL via `pg`
 - Multer
 - PDF parsing
 - Gemini AI
@@ -43,7 +43,9 @@ Deployment targets:
 
 - Frontend: Vercel
 - Backend: Render
-- Database: Aiven MySQL
+- Database: Neon (Serverless PostgreSQL)
+
+> **Migration note:** This project was originally built on MySQL (Aiven) and has been migrated to PostgreSQL (Neon). Every model file, the schema, and the connection layer were converted — see [Database Tables](#database-tables) and [Local Setup](#local-setup) below for the Postgres-specific steps.
 
 ## Project Structure
 
@@ -99,8 +101,7 @@ ai-resume-analyzer/
 |   |-- package.json
 |   `-- server.js
 |-- database/
-|   |-- schema.sql
-|   `-- 2026_06_05_career_prep_features.sql
+|   `-- schema.sql
 |-- frontend/
 |   |-- src/
 |   |   |-- components/
@@ -122,6 +123,8 @@ ai-resume-analyzer/
 `-- README.md
 ```
 
+> Note: `database/2026_06_05_career_prep_features.sql` has been removed. Every table it created is already included in the consolidated `database/schema.sql`, so only one file is needed for a fresh setup now.
+
 ## Database Tables
 
 Core tables:
@@ -141,21 +144,26 @@ Career-prep feature tables:
 - `interview_sessions`
 - `interview_answers`
 
-For a fresh database, run:
+All `JSON` columns from the original MySQL schema are now `JSONB` in Postgres (binary JSON — faster and indexable). All boolean flags (`is_favorite`, `is_tailored`, `is_active`) are native `BOOLEAN` instead of `TINYINT(1)`. `updated_at` columns are kept in sync automatically via a Postgres trigger (`set_updated_at()`), replacing MySQL's `ON UPDATE CURRENT_TIMESTAMP`.
+
+For a fresh database, run the schema against your Neon connection string:
 
 ```bash
-mysql -u root -p resume_analyzer < database/schema.sql
+psql "$DATABASE_URL" -f database/schema.sql
 ```
 
-For an existing database, apply the feature migration:
-
-```bash
-mysql -u root -p resume_analyzer < database/2026_06_05_career_prep_features.sql
-```
+Or paste the contents of `database/schema.sql` directly into the Neon SQL Editor in your project dashboard.
 
 ## Local Setup
 
-### 1. Install Backend Dependencies
+### 1. Create a Neon Database
+
+1. Sign up at [neon.tech](https://neon.tech) and create a new project.
+2. In the project dashboard, open **Connection Details** and copy the **pooled connection string** (it looks like `postgresql://user:password@ep-xxxx-pooler.region.aws.neon.tech/neondb?sslmode=require`).
+3. Save it — you'll paste it into `backend/.env` as `DATABASE_URL` in the next step.
+4. Run `database/schema.sql` against it (via `psql` or the Neon SQL Editor) to create all tables and seed the default resume templates.
+
+### 2. Install Backend Dependencies
 
 ```bash
 cd backend
@@ -168,11 +176,7 @@ Create `backend/.env`:
 PORT=5000
 NODE_ENV=development
 
-DB_HOST=localhost
-DB_PORT=3306
-DB_USER=root
-DB_PASSWORD=your_mysql_password
-DB_NAME=resume_analyzer
+DATABASE_URL=postgresql://your_user:your_password@your-project.neon.tech/neondb?sslmode=require
 
 JWT_SECRET=change_this_to_a_long_random_secret
 JWT_EXPIRES_IN=7d
@@ -186,10 +190,16 @@ UPLOAD_DIR=uploads
 
 If `GEMINI_API_KEY` is not set, the app uses fallback or mock responses where available.
 
-### 2. Start Backend
+### 3. Start Backend
 
 ```bash
 npm run dev
+```
+
+On a successful start you should see:
+
+```text
+✅ PostgreSQL (Neon) connected successfully
 ```
 
 Backend URL:
@@ -204,14 +214,14 @@ Health check:
 GET /api/health
 ```
 
-### 3. Install Frontend Dependencies
+### 4. Install Frontend Dependencies
 
 ```bash
 cd ../frontend
 npm install
 ```
 
-### 4. Start Frontend
+### 5. Start Frontend
 
 ```bash
 npm run dev
@@ -350,14 +360,30 @@ npm run dev
 npm run build
 ```
 
+Database (Postgres):
+
+```bash
+# Run schema against Neon
+psql "$DATABASE_URL" -f database/schema.sql
+
+# Open an interactive shell against Neon
+psql "$DATABASE_URL"
+
+# Inside psql — list all tables
+\dt
+
+# Inside psql — inspect a table's columns
+\d analyses
+```
+
 ## Deployment Notes
 
 ### Backend on Render
 
-- Set all backend environment variables in Render.
+- Set all backend environment variables in Render, including `DATABASE_URL` from Neon.
 - Use `node server.js` as the start command.
 - Set `CLIENT_URL` to the deployed Vercel frontend URL.
-- Use persistent file storage or external object storage for production resume uploads.
+- Use persistent file storage or external object storage (e.g. Cloudinary, S3) for production resume uploads — Render's filesystem is ephemeral and uploaded PDFs will not survive a redeploy otherwise.
 
 ### Frontend on Vercel
 
@@ -365,12 +391,13 @@ npm run build
 - Build command: `npm run build`
 - Output directory: `dist`
 
-### Database on Aiven MySQL
+### Database on Neon (Serverless PostgreSQL)
 
-- Create a MySQL database.
-- Run `database/schema.sql` for fresh setup.
-- Run new migration files when upgrading an existing database.
-- Configure `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, and `DB_NAME` in the backend environment.
+- Create a project at [neon.tech](https://neon.tech) — a default database (`neondb`) is created automatically.
+- Run `database/schema.sql` once via `psql` or the Neon SQL Editor for a fresh setup.
+- Copy the **pooled connection string** (recommended for serverless/traffic-spiky workloads) into `DATABASE_URL` in your backend environment, both locally and on Render.
+- Neon scales to zero when idle — the first request after inactivity may take a second or two longer while the database wakes up. This is expected behavior, not an error.
+- Neon requires SSL; the connection string already includes `?sslmode=require`, and `backend/config/db.js` also sets `ssl: { rejectUnauthorized: false }` as a safety net.
 
 ## Security
 
@@ -381,6 +408,7 @@ npm run build
 - Resume upload is restricted to PDF files through the upload middleware.
 - CORS is scoped through `CLIENT_URL`.
 - User-owned resources are scoped by `req.user.id` in controllers and models.
+- Database connections to Neon are encrypted via SSL/TLS.
 
 ## License
 
